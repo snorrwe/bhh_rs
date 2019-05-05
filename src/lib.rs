@@ -130,36 +130,26 @@ impl<'a> Object<'a> {
     }
 }
 
-struct BhhCompare(pub u8);
-
-impl BhhCompare {
-    /// is `a` "less" than `b`?
-    pub fn compare(&self, a: &AABB, b: &AABB) -> Ordering {
-        match self.0 {
-            0 => a.min.x.partial_cmp(&b.min.x).unwrap_or(Ordering::Equal),
-            1 => a.min.y.partial_cmp(&b.min.y).unwrap_or(Ordering::Equal),
-            2 => a.min.z.partial_cmp(&b.min.z).unwrap_or(Ordering::Equal),
-            3 => (-(a.max.x + a.max.y + a.max.z))
-                .partial_cmp(&-(b.max.x + b.max.y + b.max.z))
-                .unwrap_or(Ordering::Equal),
-            _ => unimplemented!(),
-        }
+/// is `a` "less" than `b`?
+pub fn bhh_compare(dir: u8, a: &AABB, b: &AABB) -> Ordering {
+    match dir {
+        0 => a.min.x.partial_cmp(&b.min.x).unwrap_or(Ordering::Equal),
+        1 => a.min.y.partial_cmp(&b.min.y).unwrap_or(Ordering::Equal),
+        2 => a.min.z.partial_cmp(&b.min.z).unwrap_or(Ordering::Equal),
+        3 => (-(a.max.x + a.max.y + a.max.z))
+            .partial_cmp(&-(b.max.x + b.max.y + b.max.z))
+            .unwrap_or(Ordering::Equal),
+        _ => unimplemented!(),
     }
 }
 
-struct BhhReject(pub u8);
-
-impl BhhReject {
-    pub fn query(&self, aabb: &AABB, query: &AABB) -> bool {
-        match self.0 {
-            0 => query.max.x < aabb.min.x,
-            1 => query.max.y < aabb.min.y,
-            2 => query.max.z < aabb.min.z,
-            3 => {
-                -(query.min.x + query.min.y + query.min.z) < -(aabb.max.x + aabb.max.y + aabb.max.z)
-            }
-            _ => unimplemented!(),
-        }
+pub fn bhh_reject(dir: u8, aabb: &AABB, query: &AABB) -> bool {
+    match dir {
+        0 => query.max.x < aabb.min.x,
+        1 => query.max.y < aabb.min.y,
+        2 => query.max.z < aabb.min.z,
+        3 => -(query.min.x + query.min.y + query.min.z) < -(aabb.max.x + aabb.max.y + aabb.max.z),
+        _ => unimplemented!(),
     }
 }
 
@@ -173,8 +163,7 @@ fn bhh_sort_impl(items: &mut [AABB], dir: u8) {
         return;
     }
     let median = items.len() / 2;
-    let cmp = BhhCompare(dir);
-    items.partition_at_index_by(median, |a, b| cmp.compare(a, b));
+    items.partition_at_index_by(median, |a, b| bhh_compare(dir, a, b));
     let (lo, hi) = items.split_at_mut(median);
     let hi = &mut hi[1..]; // skip the median
     rayon::join(
@@ -205,7 +194,7 @@ fn bhh_search_impl(items: &[AABB], query: &AABB, dir: u8) -> u32 {
     } else {
         let median = items.len() / 2;
         let intersections = bhh_search_impl(&items[..median], query, (dir + 1) & 3);
-        if BhhReject(dir).query(&items[median], query) {
+        if bhh_reject(dir, &items[median], query) {
             return intersections;
         }
         let inter = if items[median].intersects(query) {

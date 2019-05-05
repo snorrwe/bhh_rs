@@ -47,6 +47,13 @@ fn bench_sorting(bencher: &mut Bencher) {
     });
 }
 
+fn bench_sorting_already_sorted(bencher: &mut Bencher) {
+    bencher.iter(|| {
+        let mut items = ORDERED.clone();
+        bhh_sort(&mut items);
+    });
+}
+
 fn naive_search(items: &[AABB], query: &AABB) -> u32 {
     items.iter().filter(|a| a.intersects(query)).count() as u32
 }
@@ -107,10 +114,11 @@ fn bench_bhh_ordered(bencher: &mut Bencher) {
 benchmark_group!(
     benches,
     bench_bhh_ordered,
-    bench_naive_ordered,
     bench_bhh_unordered,
+    bench_naive_ordered,
     bench_naive_unordered,
     bench_sorting,
+    bench_sorting_already_sorted,
 );
 benchmark_main!(benches);
 
