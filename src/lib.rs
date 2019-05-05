@@ -4,6 +4,7 @@
 #![feature(slice_partition_at_index)]
 
 extern crate rand;
+extern crate rayon;
 
 use std::cmp::Ordering;
 use std::ops::Add;
@@ -174,8 +175,12 @@ fn bhh_sort_impl(items: &mut [AABB], dir: u8) {
     let median = items.len() / 2;
     let cmp = BhhCompare(dir);
     items.partition_at_index_by(median, |a, b| cmp.compare(a, b));
-    bhh_sort_impl(&mut items[0..median], (dir + 1) & 3);
-    bhh_sort_impl(&mut items[median + 1..], (dir + 1) & 3);
+    let (lo, hi) = items.split_at_mut(median);
+    let hi = &mut hi[1..]; // skip the median
+    rayon::join(
+        || bhh_sort_impl(lo, (dir + 1) & 3),
+        || bhh_sort_impl(hi, (dir + 1) & 3),
+    );
 }
 
 /// Return the number of objects intersecting with `query`

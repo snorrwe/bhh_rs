@@ -40,6 +40,13 @@ lazy_static! {
     };
 }
 
+fn bench_sorting(bencher: &mut Bencher) {
+    bencher.iter(|| {
+        let mut items = UNORDERED.clone();
+        bhh_sort(&mut items);
+    });
+}
+
 fn naive_search(items: &[AABB], query: &AABB) -> u32 {
     items.iter().filter(|a| a.intersects(query)).count() as u32
 }
@@ -103,6 +110,7 @@ benchmark_group!(
     bench_naive_ordered,
     bench_bhh_unordered,
     bench_naive_unordered,
+    bench_sorting,
 );
 benchmark_main!(benches);
 

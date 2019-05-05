@@ -6,6 +6,7 @@ edition = "2018"
 
 [dependencies]
 rand = "0.6"
+rayon = "1.0"
 
 [dev-dependencies]
 lazy_static = "1.3"
