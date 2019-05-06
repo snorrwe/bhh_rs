@@ -3,8 +3,11 @@ extern crate bencher;
 #[macro_use]
 extern crate lazy_static;
 
+mod objects;
+
 use bencher::Bencher;
 use bhh_rs::*;
+use objects::{Mesh, Object};
 
 const K_OBJECTS: usize = 1_000_000;
 const K_TESTS: usize = 100;

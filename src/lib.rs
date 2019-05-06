@@ -28,6 +28,14 @@ impl Add for &Float3 {
     }
 }
 
+impl Add for Float3 {
+    type Output = Float3;
+
+    fn add(self, rhs: Self) -> Float3 {
+        &self + &rhs
+    }
+}
+
 impl Float3 {
     pub fn dot(&self, rhs: &Self) -> f32 {
         self.x * rhs.x + self.y * rhs.y + self.z * rhs.z
@@ -61,6 +69,14 @@ pub struct AABB {
 }
 
 impl AABB {
+    pub fn new(min: Float3, max: Float3) -> Self {
+        debug_assert!(min.x <= max.x);
+        debug_assert!(min.y <= max.y);
+        debug_assert!(min.z <= max.z);
+
+        Self { min, max }
+    }
+
     pub fn intersects(&self, other: &AABB) -> bool {
         self.min.x <= other.max.x
             && self.max.x >= other.min.x
@@ -71,66 +87,7 @@ impl AABB {
     }
 }
 
-#[derive(Debug, Clone)]
-pub struct Mesh {
-    points: Vec<Float3>,
-}
-
-impl Mesh {
-    pub fn new(points: usize, radius: f32) -> Self {
-        debug_assert!(radius > 0.);
-        debug_assert!(points > 0);
-
-        use rand::Rng;
-
-        let mut rng = rand::thread_rng();
-        let mut coord = move || rng.gen_range(-radius, radius);
-
-        let points = (0..points)
-            .map(|_| loop {
-                let point = Float3 {
-                    x: coord(),
-                    y: coord(),
-                    z: coord(),
-                };
-                if point.len() < radius {
-                    break point;
-                }
-            })
-            .collect();
-
-        Self { points }
-    }
-}
-
-#[derive(Debug, Clone)]
-pub struct Object<'a> {
-    pub mesh: &'a Mesh,
-    pub position: Float3,
-}
-
-impl<'a> Object<'a> {
-    pub fn get_calculated_aabb(&self) -> AABB {
-        let mut result = AABB::default();
-        self.calculate_aabb(&mut result);
-        result
-    }
-
-    pub fn calculate_aabb(&self, out: &mut AABB) {
-        let xyz = &self.position + &self.mesh.points[0];
-        out.min = xyz.clone();
-        out.max = xyz;
-
-        self.mesh.points.iter().for_each(|point| {
-            let xyz = &self.position + point;
-
-            out.min = out.min.min(&xyz);
-            out.max = out.max.max(&xyz);
-        });
-    }
-}
-
-/// is `a` "less" than `b`?
+/// Compares two `AABB`s by the given direction
 pub fn bhh_compare(dir: u8, a: &AABB, b: &AABB) -> Ordering {
     match dir {
         0 => a.min.x.partial_cmp(&b.min.x).unwrap_or(Ordering::Equal),
@@ -223,19 +180,28 @@ mod tests {
 
         const COUNT: usize = 100;
 
-        let shared_mesh: Mesh = Mesh::new(100, 1.);
-
         let unordered = (0..COUNT)
             .map(|_| {
-                Object {
-                    mesh: &shared_mesh,
-                    position: Float3 {
-                        x: coord(),
-                        y: coord(),
-                        z: coord(),
-                    },
-                }
-                .get_calculated_aabb()
+                let min = Float3 {
+                    x: coord(),
+                    y: coord(),
+                    z: coord(),
+                };
+                let max = Float3 {
+                    x: coord(),
+                    y: coord(),
+                    z: coord(),
+                };
+
+                let (min, max) = (min.min(&max), min.max(&max));
+                let position = Float3 {
+                    x: coord(),
+                    y: coord(),
+                    z: coord(),
+                };
+                let min = &min + &position;
+                let max = &max + &position;
+                AABB { min, max }
             })
             .collect::<Vec<_>>();
 
