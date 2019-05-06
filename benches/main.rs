@@ -6,21 +6,21 @@ extern crate lazy_static;
 use bencher::Bencher;
 use bhh_rs::*;
 
-const SIZE: usize = 1_000_000;
-const POINTS: usize = 100;
-const N_TESTS: usize = 100;
+const K_OBJECTS: usize = 1_000_000;
+const K_TESTS: usize = 100;
 const OBJECT_POSITION_RADIUS: f32 = 50.;
+const MESH_POINTS: usize = 100;
 const MESH_RADIUS: f32 = 1.;
 
 lazy_static! {
-    static ref SHARED_MESH: Mesh = Mesh::new(POINTS, MESH_RADIUS);
+    static ref SHARED_MESH: Mesh = Mesh::new(MESH_POINTS, MESH_RADIUS);
     static ref ITEMS: Vec<Object<'static>> = {
         use rand::Rng;
 
         let mut rng = rand::thread_rng();
         let mut coord = move || rng.gen_range(-OBJECT_POSITION_RADIUS, OBJECT_POSITION_RADIUS);
 
-        (0..SIZE)
+        (0..K_OBJECTS)
             .map(|_| Object {
                 mesh: &SHARED_MESH,
                 position: Float3 {
@@ -62,7 +62,7 @@ fn bench_naive_ordered(bencher: &mut Bencher) {
     bencher.iter(|| {
         let mut n: u32 = 0;
 
-        for q in UNORDERED.iter().take(N_TESTS) {
+        for q in UNORDERED.iter().take(K_TESTS) {
             n += naive_search(ORDERED.as_slice(), q);
         }
 
@@ -74,7 +74,7 @@ fn bench_naive_unordered(bencher: &mut Bencher) {
     bencher.iter(|| {
         let mut n: u32 = 0;
 
-        for q in UNORDERED.iter().take(N_TESTS) {
+        for q in UNORDERED.iter().take(K_TESTS) {
             n += naive_search(UNORDERED.as_slice(), q);
         }
 
@@ -89,7 +89,7 @@ fn bench_bhh_unordered(bencher: &mut Bencher) {
 
         let mut n: u32 = 0;
 
-        for q in UNORDERED.iter().take(N_TESTS) {
+        for q in UNORDERED.iter().take(K_TESTS) {
             n += bhh_search(objects.as_slice(), q);
         }
 
@@ -103,7 +103,7 @@ fn bench_bhh_ordered(bencher: &mut Bencher) {
     bencher.iter(|| {
         let mut n: u32 = 0;
 
-        for q in UNORDERED.iter().take(N_TESTS) {
+        for q in UNORDERED.iter().take(K_TESTS) {
             n += bhh_search(ORDERED.as_slice(), q);
         }
 
