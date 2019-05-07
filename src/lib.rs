@@ -136,30 +136,18 @@ pub fn bhh_search(items: &[AABB], query: &AABB) -> u32 {
 }
 
 fn bhh_search_impl(items: &[AABB], query: &AABB, dir: u8) -> u32 {
-    if items.len() < 2 {
-        match items.len() {
-            1 => {
-                if items[0].intersects(query) {
-                    1
-                } else {
-                    0
-                }
+    match items.len() {
+        0 => 0,
+        1 => items[0].intersects(query) as u32,
+        _ => {
+            let median = items.len() / 2;
+            let intersections = bhh_search_impl(&items[..median], query, (dir + 1) & 3);
+            if bhh_reject(dir, &items[median], query) {
+                return intersections;
             }
-            0 => 0,
-            _ => unreachable!(),
+            let inter = items[median].intersects(query) as u32;
+            intersections + inter + bhh_search_impl(&items[median + 1..], query, (dir + 1) & 3)
         }
-    } else {
-        let median = items.len() / 2;
-        let intersections = bhh_search_impl(&items[..median], query, (dir + 1) & 3);
-        if bhh_reject(dir, &items[median], query) {
-            return intersections;
-        }
-        let inter = if items[median].intersects(query) {
-            1
-        } else {
-            0
-        };
-        intersections + inter + bhh_search_impl(&items[median + 1..], query, (dir + 1) & 3)
     }
 }
 
@@ -201,7 +189,7 @@ mod tests {
                 };
                 let min = &min + &position;
                 let max = &max + &position;
-                AABB { min, max }
+                AABB::new(min, max)
             })
             .collect::<Vec<_>>();
 
