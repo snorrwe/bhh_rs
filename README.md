@@ -2,6 +2,8 @@
 
 Port of [https://github.com/bryanmcnett/bhh](https://github.com/bryanmcnett/bhh)
 
+[![CircleCI](https://circleci.com/gh/snorrwe/bhh_rs/tree/master.svg?style=svg)](https://circleci.com/gh/snorrwe/bhh_rs/tree/master)
+
 ## Prerequisites
 
 - [Cargo](https://doc.rust-lang.org/cargo/getting-started/installation.html)
