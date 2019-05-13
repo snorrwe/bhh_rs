@@ -2,6 +2,7 @@
 extern crate bencher;
 #[macro_use]
 extern crate lazy_static;
+extern crate rayon;
 
 mod objects;
 
@@ -61,6 +62,12 @@ fn naive_search(items: &[AABB], query: &AABB) -> u32 {
     items.iter().filter(|a| a.intersects(query)).count() as u32
 }
 
+fn naive_par_search(items: &[AABB], query: &AABB) -> u32 {
+    use rayon::prelude::*;
+
+    items.par_iter().filter(|a| a.intersects(query)).count() as u32
+}
+
 fn bench_naive_ordered(bencher: &mut Bencher) {
     bencher.iter(|| {
         let mut n: u32 = 0;
@@ -85,6 +92,30 @@ fn bench_naive_unordered(bencher: &mut Bencher) {
     });
 }
 
+fn bench_naive_par_ordered(bencher: &mut Bencher) {
+    bencher.iter(|| {
+        let mut n: u32 = 0;
+
+        for q in UNORDERED.iter().take(K_TESTS) {
+            n += naive_par_search(ORDERED.as_slice(), q);
+        }
+
+        assert_eq!(n, bencher::black_box(n));
+    });
+}
+
+fn bench_naive_par_unordered(bencher: &mut Bencher) {
+    bencher.iter(|| {
+        let mut n: u32 = 0;
+
+        for q in UNORDERED.iter().take(K_TESTS) {
+            n += naive_par_search(UNORDERED.as_slice(), q);
+        }
+
+        assert_eq!(n, bencher::black_box(n));
+    });
+}
+
 fn bench_bhh_unordered(bencher: &mut Bencher) {
     bencher.iter(|| {
         let mut objects = UNORDERED.clone();
@@ -101,8 +132,6 @@ fn bench_bhh_unordered(bencher: &mut Bencher) {
 }
 
 fn bench_bhh_ordered(bencher: &mut Bencher) {
-    bencher.bench_n(3, |_| {});
-
     bencher.iter(|| {
         let mut n: u32 = 0;
 
@@ -118,6 +147,8 @@ benchmark_group!(
     benches,
     bench_bhh_ordered,
     bench_bhh_unordered,
+    bench_naive_par_ordered,
+    bench_naive_par_unordered,
     bench_naive_ordered,
     bench_naive_unordered,
     bench_sorting,
