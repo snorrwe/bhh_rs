@@ -3,6 +3,7 @@
 //!
 #![feature(slice_partition_at_index)]
 
+#[cfg(test)]
 extern crate rand;
 extern crate rayon;
 
